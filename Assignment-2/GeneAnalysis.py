@@ -4,15 +4,21 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 from sklearn.decomposition import PCA
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import SelectKBest
+from sklearn.model_selection import train_test_split
 
 class GeneAnalysis:
-    def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots'):
+    def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots', random_state=12, test_size=0.2):
         self.data_path = data_path
         self.save_path = save_path
+        self.random_state = 12
         self.data_normalized = None
         self.data = None
         self.labels = None
         self.import_data_and_labels()
+        self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test(test_size)
+        self.mutual_info = None
         
 
     def import_data_and_labels(self):
@@ -26,7 +32,10 @@ class GeneAnalysis:
         normalized = preprocessing.normalize(self.data)
         normalized = pd.DataFrame(normalized, columns=self.data.columns)
         return normalized
-    
+
+    def split_train_test(self):
+        return train_test_split(self.data, self.labels, test_size=0.2, random_state=self.random_state)
+        
     def print_number_of_rows_and_columns(self):
         rows = self.data.shape[0]
         columns = self.data.shape[1]
@@ -105,3 +114,11 @@ class GeneAnalysis:
         # Close the figure after it's closed by the user
         plt.close(fig)
 
+    def apply_mutual_info(self):
+        self.mutual_info = mutual_info_classif(self.X_train, self.y_train.values.ravel())
+        return self.mutual_info
+    
+    def plot_mutual_info(self, mut_inf):
+        mut_inf = pd.Series(mut_inf)
+        mut_inf.sort_values(ascending=False).plot.bar(figsize=(20, 8))
+        #finish saving and window etc
