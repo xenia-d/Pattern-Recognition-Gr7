@@ -4,8 +4,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 from sklearn.decomposition import PCA
-from sklearn.feature_selection import mutual_info_classif
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 
 class GeneAnalysis:
@@ -18,7 +20,6 @@ class GeneAnalysis:
         self.labels = None
         self.import_data_and_labels()
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test(test_size)
-        self.mutual_info = None
         
 
     def import_data_and_labels(self):
@@ -33,8 +34,8 @@ class GeneAnalysis:
         normalized = pd.DataFrame(normalized, columns=self.data.columns)
         return normalized
 
-    def split_train_test(self):
-        return train_test_split(self.data, self.labels, test_size=0.2, random_state=self.random_state)
+    def split_train_test(self, test_size):
+        return train_test_split(self.data, self.labels, test_size=test_size, random_state=self.random_state)
         
     def print_number_of_rows_and_columns(self):
         rows = self.data.shape[0]
@@ -114,11 +115,101 @@ class GeneAnalysis:
         # Close the figure after it's closed by the user
         plt.close(fig)
 
-    def apply_mutual_info(self):
-        self.mutual_info = mutual_info_classif(self.X_train, self.y_train.values.ravel())
-        return self.mutual_info
+    def get_mutual_info(self):
+        mutual_info = mutual_info_classif(self.X_train, self.y_train.values.ravel())
+        return mutual_info
     
-    def plot_mutual_info(self, mut_inf):
+    def get_top_k(self, k, data):
+        # Create a DataFrame associating features with their scores
+        feature_scores = pd.Series(data, index=self.X_train.columns)
+        
+        # Sort the features by their scores in descending order
+        top_features = feature_scores.sort_values(ascending=False).head(k).index
+        
+        return top_features
+    
+    def plot_mutual_info(self, mut_inf, save=False, show=True):
         mut_inf = pd.Series(mut_inf)
-        mut_inf.sort_values(ascending=False).plot.bar(figsize=(20, 8))
-        #finish saving and window etc
+
+        # Create a figure and axis
+        fig, ax = plt.subplots(figsize=(20, 8))
+
+        # Sort the DataFrame/Series and plot it as a bar chart
+        mut_inf.sort_values(ascending=False).plot.bar(ax=ax)
+
+        # Set labels and title if desired (optional)
+        ax.set_title('Sorted Bar Plot')
+        ax.set_xlabel('Index')
+        ax.set_ylabel('Values')
+
+        # Save the plot if a save_path is provided
+        if save:
+            plt.savefig(self.save_path+'/mutual_info.png', format='png', dpi=300)
+            print(f"Plot saved as {self.save_path}'/mutual_info.png'")
+
+        # Show the plot in a window
+        if show:
+            plt.show(block=True)
+
+        # Close the figure after it's closed by the user
+        plt.close(fig)
+
+    def run_grid_search(self):
+        # Feature extraction step (SelectKBest using mutual information)
+        mutual_info = SelectKBest(score_func=mutual_info_classif)
+        pca = PCA()
+
+        # Random Forest classifier
+        rf = RandomForestClassifier(random_state=self.random_state)
+
+        # Create a pipeline with feature extraction followed by RandomForest
+        pipeline = Pipeline([
+            ('feature_selection', 'passthrough'),  # Step 1: Feature selection
+            ('classifier', 'passthrough')  # Step 2: RandomForest
+        ])
+
+        # Define the parameter grid
+        param_grid = [
+            # Option 1: Use SelectKBest with Mutual Information, RF
+            {
+                'feature_selection': [mutual_info],
+                'feature_selection__k': [5, 10, 20],  # Number of top features to select
+                'classifier__n_estimators': [100, 200],
+                'classifier__max_depth': [None, 10, 20],
+                'classifier': [rf],
+            },
+            # Option 1: Use SelectKBest with Mutual Information, KNN
+            {
+                'feature_selection': [mutual_info],
+                'feature_selection__k': [5, 10, 20],  # Number of top features to select
+                'classifier__n_estimators': [100, 200],
+                'classifier__max_depth': [None, 10, 20],
+                'classifier': [knn],
+            },
+            # Option 2: Use PCA for feature extraction
+            {
+                'feature_selection': [pca],
+                'feature_selection__n_components': [5, 10, 20],  # Number of PCA components
+                'classifier__n_estimators': [100, 200],
+                'classifier__max_depth': [None, 10, 20],
+            },
+            # Option 3: No feature extraction (use all features)
+            {
+                'feature_selection': ['passthrough'],  # Use all features without any extraction
+                'classifier__n_estimators': [100, 200],
+                'classifier__max_depth': [None, 10, 20],
+            }
+        ]
+
+        # Set up the grid search
+        grid_search = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+
+        # Fit the grid search on your training data
+        grid_search.fit(self.X_train, self.y_train)
+
+        # Get the best parameters and model
+        best_params = grid_search.best_params_
+        best_model = grid_search.best_estimator_
+
+        print("Best Parameters:", best_params)
+        print("Best Model:", best_model)
