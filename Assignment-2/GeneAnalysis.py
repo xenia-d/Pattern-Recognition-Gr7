@@ -26,6 +26,8 @@ class GeneAnalysis:
         self.labels = None
         self.import_data_and_labels()
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test(test_size)
+        self.y_train = self.y_train.values.ravel()
+        self.y_test = self.y_test.values.ravel()
         
 
     def import_data_and_labels(self):
@@ -34,14 +36,17 @@ class GeneAnalysis:
         data = pd.read_csv(self.data_path+'/data.csv')
         self.data = data.drop(labels='Unnamed: 0', axis=1)
         self.data_normalized = self.get_normalized_data()
+        print("Data has been loaded.")
 
     def get_normalized_data(self):
         normalized = normalize(self.data)
         normalized = pd.DataFrame(normalized, columns=self.data.columns)
+        ("Data has been normalized.")
         return normalized
 
     def split_train_test(self, test_size):
         # gets train test split from NORMALIZED data
+        print("Splitting train-test 80-20.")
         return train_test_split(self.data_normalized, self.labels, test_size=test_size, random_state=self.random_state)
         
     def print_number_of_rows_and_columns(self):
@@ -135,6 +140,7 @@ class GeneAnalysis:
         plt.close(fig)
 
     def run_kmeans(self):
+        print("Running KMeans algorithm.")
         kmeans = KMeans(n_clusters = 5, random_state = 0, n_init='auto')
         kmeans.fit(self.data_normalized)
 
@@ -288,7 +294,7 @@ class GeneAnalysis:
         return pipeline, param_grid
 
     def get_pipeline_and_param_grid_TESTING_OUT(self):
-
+        print("Initializing grid search pipeline and parameters.")
         # Create a pipeline with feature extraction followed by RandomForest
         pipeline = Pipeline([
             ('feature_selection', 'passthrough'),  # Step 1: Feature selection
@@ -309,13 +315,13 @@ class GeneAnalysis:
             # Option 1a: Use SelectKBest with Mutual Information, RF
             {
                 'feature_selection': [mutual_info],
-                'feature_selection__n_components': [500],
+                'feature_selection__k': [500],
                 'classifier': [rf]
             },
             # Option 1b: Use SelectKBest with Mutual Information, KNN
             {
                 'feature_selection': [mutual_info],
-                'feature_selection__n_components': [10],
+                'feature_selection__k': [10],
                 'classifier': [knn],
                 'classifier__n_neighbors': [3, 5],
             },
@@ -356,8 +362,9 @@ class GeneAnalysis:
         else:
             pipeline, param_grid = self.get_pipeline_and_param_grid()
 
+        print("Starting grid search.")
         for cv_name, cv_strategy in cv_methods.items():
-            grid_search = GridSearchCV(pipeline, param_grid, cv=cv_strategy, scoring=scoring, refit='f1', n_jobs=-1)
+            grid_search = GridSearchCV(pipeline, param_grid, verbose=3, cv=cv_strategy, scoring=scoring, refit='f1', n_jobs=-1)
             grid_search.fit(self.X_train, self.y_train)
             
             # Save the results for this CV strategy
