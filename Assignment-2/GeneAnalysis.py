@@ -328,6 +328,7 @@ class GeneAnalysis:
             # Option 1c: Use SelectKBest with Mutual Information, SVC
             {
                 'feature_selection': [pca],
+                'feature_selection__n_components': [2],
                 'classifier': [svc],
             },
             # No feature extraction
@@ -343,7 +344,7 @@ class GeneAnalysis:
 
         # Defining the cross-validation method
         cv_methods = {
-            'KFold_3': KFold(n_splits=5),
+            'KFold_3': KFold(n_splits=3),
             'LeaveOneOut': LeaveOneOut(),
             'No_cv': None
         }        
