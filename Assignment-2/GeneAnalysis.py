@@ -340,7 +340,7 @@ class GeneAnalysis:
         y_pred = model.predict(self.X_test)
 
         acc = accuracy_score(self.y_test, y_pred)
-        f1 = f1_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred, average='weighted')
         roc_auc = roc_auc_score(self.y_test, y_pred, multi_class='ovo', average='weighted')
         cm = confusion_matrix(self.y_test, y_pred, labels=self.labels['Class'].unique())
 
