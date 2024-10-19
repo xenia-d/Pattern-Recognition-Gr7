@@ -6,9 +6,12 @@ import os
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV, KFold, LeaveOneOut
 from sklearn.model_selection import train_test_split
+import pickle
 
 class GeneAnalysis:
     def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots', random_state=12, test_size=0.2):
@@ -48,9 +51,7 @@ class GeneAnalysis:
         class_counts = self.labels['Class'].value_counts()
 
         fig, ax = plt.subplots()
-
         sns.barplot(x=class_counts.index, y=class_counts.values, ax=ax)
-
         ax.set_xlabel('Class')
         ax.set_ylabel('Frequency')
         ax.set_title('Class Distribution of Types of Tumors')
@@ -63,15 +64,12 @@ class GeneAnalysis:
         plt.close(fig)
     
     def apply_PCA(self, use_normalized=True, plot=True, save=False):
-        #  Drop non-numeric columns
         if use_normalized:
             data_numeric = self.data_normalized.apply(pd.to_numeric, errors='coerce').dropna(axis=0)
         else:
             data_numeric = self.data.apply(pd.to_numeric, errors='coerce').dropna(axis=0)
 
-        # Applying PCA to project data onto 2D
         pca = PCA(n_components=2)
-
         data_pca = pca.fit_transform(data_numeric)
         explained_variance = pca.explained_variance_ratio_
 
@@ -85,22 +83,17 @@ class GeneAnalysis:
         # Convert labels to numeric
         labels_numeric, uniques = pd.factorize(self.labels.iloc[:, 0].values)  # Use first column
         
-        # Create a figure and axis
         fig, ax = plt.subplots(figsize=(8, 6))
-
-        # Create the scatter plot with the PCA data and class labels
         scatter = ax.scatter(data_pca[:, 0], data_pca[:, 1], c=labels_numeric, cmap='viridis', s=50)
 
         # Create a colorbar with unique class labels
         cbar = plt.colorbar(scatter, ax=ax, ticks=range(len(uniques)))
         cbar.ax.set_yticklabels(uniques)  # Set colorbar labels to the original class names
 
-        # Set axis labels with explained variance percentages
         ax.set_title('PCA Visualization of Data')
         ax.set_xlabel(f'Principal Component 1 ({explained_variance[0] * 100:.2f}% variance)')
         ax.set_ylabel(f'Principal Component 2 ({explained_variance[1] * 100:.2f}% variance)')
 
-        # Save the plot if a save_path is provided
         if save:
             if is_normalized:
                 plt.savefig(self.save_path+'/PCA_normalized.png', format='png', dpi=300)
@@ -109,10 +102,7 @@ class GeneAnalysis:
                 plt.savefig(self.save_path+'/PCA.png', format='png', dpi=300)
                 print(f"Plot saved as {self.save_path}/PCA.png")
 
-        # Show the plot in a window
         plt.show(block=True)
-
-        # Close the figure after it's closed by the user
         plt.close(fig)
 
     def get_mutual_info(self):
@@ -120,47 +110,28 @@ class GeneAnalysis:
         return mutual_info
     
     def get_top_k(self, k, data):
-        # Create a DataFrame associating features with their scores
         feature_scores = pd.Series(data, index=self.X_train.columns)
-        
-        # Sort the features by their scores in descending order
         top_features = feature_scores.sort_values(ascending=False).head(k).index
         
         return top_features
     
     def plot_mutual_info(self, mut_inf, save=False, show=True):
         mut_inf = pd.Series(mut_inf)
-
-        # Create a figure and axis
         fig, ax = plt.subplots(figsize=(20, 8))
-
-        # Sort the DataFrame/Series and plot it as a bar chart
         mut_inf.sort_values(ascending=False).plot.bar(ax=ax)
-
-        # Set labels and title if desired (optional)
         ax.set_title('Sorted Bar Plot')
         ax.set_xlabel('Index')
         ax.set_ylabel('Values')
 
-        # Save the plot if a save_path is provided
         if save:
             plt.savefig(self.save_path+'/mutual_info.png', format='png', dpi=300)
             print(f"Plot saved as {self.save_path}'/mutual_info.png'")
 
-        # Show the plot in a window
         if show:
             plt.show(block=True)
-
-        # Close the figure after it's closed by the user
         plt.close(fig)
-
-    def run_grid_search(self):
-        # Feature extraction step (SelectKBest using mutual information)
-        mutual_info = SelectKBest(score_func=mutual_info_classif)
-        pca = PCA()
-
-        # Random Forest classifier
-        rf = RandomForestClassifier(random_state=self.random_state)
+    
+    def get_pipeline_and_param_grid(self):
 
         # Create a pipeline with feature extraction followed by RandomForest
         pipeline = Pipeline([
@@ -168,48 +139,128 @@ class GeneAnalysis:
             ('classifier', 'passthrough')  # Step 2: RandomForest
         ])
 
+        # Defining Feature Extraction
+        mutual_info = SelectKBest(score_func=mutual_info_classif)
+        pca = PCA()
+
+        # Defining classifiers
+        rf = RandomForestClassifier(random_state=self.random_state)
+        knn= KNeighborsClassifier()
+        svc = SVC(random_state=self.random_state)
+
         # Define the parameter grid
         param_grid = [
-            # Option 1: Use SelectKBest with Mutual Information, RF
+            # Option 1a: Use SelectKBest with Mutual Information, RF
             {
                 'feature_selection': [mutual_info],
                 'feature_selection__k': [5, 10, 20],  # Number of top features to select
                 'classifier__n_estimators': [100, 200],
                 'classifier__max_depth': [None, 10, 20],
-                'classifier': [rf],
+                'classifier': [rf]
             },
-            # Option 1: Use SelectKBest with Mutual Information, KNN
+            # Option 1b: Use SelectKBest with Mutual Information, KNN
             {
                 'feature_selection': [mutual_info],
-                'feature_selection__k': [5, 10, 20],  # Number of top features to select
-                'classifier__n_estimators': [100, 200],
-                'classifier__max_depth': [None, 10, 20],
+                'feature_selection__k': [5, 10, 20],
                 'classifier': [knn],
+                'classifier__n_neighbors': [3, 5, 7],
+                'classifier__weights': ['uniform', 'distance']
             },
-            # Option 2: Use PCA for feature extraction
+            # Option 1c: Use SelectKBest with Mutual Information, SVC
+            {
+                'feature_selection': [mutual_info],
+                'feature_selection__k': [5, 10, 20], 
+                'classifier': [svc],
+                'classifier__C': [0.1, 1, 10], 
+                'classifier__kernel': ['linear', 'rbf']
+            },
+            # Option 2a: Use PCA, RF
             {
                 'feature_selection': [pca],
-                'feature_selection__n_components': [5, 10, 20],  # Number of PCA components
+                'feature_selection__n_components': [5, 10, 20],
                 'classifier__n_estimators': [100, 200],
                 'classifier__max_depth': [None, 10, 20],
+                'classifier': [rf]
             },
-            # Option 3: No feature extraction (use all features)
+            # Option 2b: Use PCA, KNN
             {
-                'feature_selection': ['passthrough'],  # Use all features without any extraction
+                'feature_selection': [pca],
+                'feature_selection__n_components': [5, 10, 20],
+                'classifier': [knn],
+                'classifier__n_neighbors': [3, 5, 7],
+                'classifier__weights': ['uniform', 'distance'] 
+            },
+            # Option 2c: Use SelectKBest with Mutual Information, SVC
+            {
+                'feature_selection': [pca],
+                'feature_selection__n_components': [5, 10, 20],
+                'classifier': [svc],
+                'classifier__C': [0.1, 1, 10],
+                'classifier__kernel': ['linear', 'rbf']
+            },
+            # Option 3a: No feature extraction, RF
+            {
+                'feature_selection': ['passthrough'],
                 'classifier__n_estimators': [100, 200],
                 'classifier__max_depth': [None, 10, 20],
+                'classifier': [rf]
+            },
+            # Option 3b: No feature extraction, KNN
+            {
+                'feature_selection': ['passthrough'],
+                'classifier': [knn],
+                'classifier__n_neighbors': [3, 5, 7],
+                'classifier__weights': ['uniform', 'distance'] 
+            },
+            # Option 3c: No feature extraction, SVC
+            {
+                'feature_selection': ['passthrough'], 
+                'classifier': [svc],
+                'classifier__C': [0.1, 1, 10],
+                'classifier__kernel': ['linear', 'rbf']
             }
         ]
+        
+        return pipeline, param_grid
 
-        # Set up the grid search
-        grid_search = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+    def run_grid_search(self):
 
-        # Fit the grid search on your training data
-        grid_search.fit(self.X_train, self.y_train)
+        # Defining the cross-validation method
+        cv_methods = {
+            'KFold_3': KFold(n_splits=5),
+            'LeaveOneOut': LeaveOneOut(),
+            'No_cv': None
+        }        
 
-        # Get the best parameters and model
-        best_params = grid_search.best_params_
-        best_model = grid_search.best_estimator_
+        cv_results = {}
 
-        print("Best Parameters:", best_params)
-        print("Best Model:", best_model)
+        pipeline, param_grid = self.get_pipeline_and_param_grid()
+
+        for cv_name, cv_strategy in cv_methods.items():
+            grid_search = GridSearchCV(pipeline, param_grid, cv=cv_strategy, scoring='accuracy', n_jobs=-1)
+            grid_search.fit(self.X_train, self.y_train)
+            
+            # Save the results for this CV strategy
+            cv_results[cv_name] = {
+                'grid': grid_search,
+                'results': grid_search.cv_results_,
+                'best_params': grid_search.best_params_,
+                'best_score': grid_search.best_score_
+            }
+
+            self.save_to_pickle(grid_search, cv_name+'_grid_search')
+        
+        self.save_to_pickle(cv_results, 'all_cv_grid_search_results')
+
+        # Print the results for each cross-validation method
+        for cv_name, results in cv_results.items():
+            print(f"Results for {cv_name}:")
+            print(f"Best Parameters: {results['best_params']}")
+            print(f"Best Score: {results['best_score']}")
+            print("----------------------------")
+
+    def save_to_pickle(self, results, filename):
+        filename = os.path.join(self.save_path,filename+'.pkl')
+        with open(filename, 'wb') as file:
+            pickle.dump(results, file)
+        print(f"Results saved to {filename}")
