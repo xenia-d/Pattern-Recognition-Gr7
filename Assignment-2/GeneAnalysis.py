@@ -287,7 +287,53 @@ class GeneAnalysis:
         
         return pipeline, param_grid
 
-    def run_grid_search(self):
+    def get_pipeline_and_param_grid_TESTING_OUT(self):
+
+        # Create a pipeline with feature extraction followed by RandomForest
+        pipeline = Pipeline([
+            ('feature_selection', 'passthrough'),  # Step 1: Feature selection
+            ('classifier', 'passthrough')  # Step 2: RandomForest
+        ])
+
+        # Defining Feature Extraction
+        mutual_info = SelectKBest(score_func=mutual_info_classif)
+        pca = PCA()
+
+        # Defining classifiers
+        rf = RandomForestClassifier(random_state=self.random_state)
+        knn= KNeighborsClassifier()
+        svc = SVC(random_state=self.random_state)
+
+        # Define the parameter grid
+        param_grid = [
+            # Option 1a: Use SelectKBest with Mutual Information, RF
+            {
+                'feature_selection': [mutual_info],
+                'feature_selection__n_components': [500],
+                'classifier': [rf]
+            },
+            # Option 1b: Use SelectKBest with Mutual Information, KNN
+            {
+                'feature_selection': [mutual_info],
+                'feature_selection__n_components': [10],
+                'classifier': [knn],
+                'classifier__n_neighbors': [3, 5],
+            },
+            # Option 1c: Use SelectKBest with Mutual Information, SVC
+            {
+                'feature_selection': [pca],
+                'classifier': [svc],
+            },
+            # No feature extraction
+            {
+                'classifier': [svc],
+            }
+        ]
+        
+        return pipeline, param_grid
+
+
+    def run_grid_search(self, testing=False):
 
         # Defining the cross-validation method
         cv_methods = {
@@ -305,7 +351,10 @@ class GeneAnalysis:
 
         cv_results = {}
 
-        pipeline, param_grid = self.get_pipeline_and_param_grid()
+        if testing:
+            pipeline, param_grid = self.get_pipeline_and_param_grid_TESTING_OUT()
+        else:
+            pipeline, param_grid = self.get_pipeline_and_param_grid()
 
         for cv_name, cv_strategy in cv_methods.items():
             grid_search = GridSearchCV(pipeline, param_grid, cv=cv_strategy, scoring=scoring, refit='f1', n_jobs=-1)
@@ -318,7 +367,7 @@ class GeneAnalysis:
                 'best_params': grid_search.best_params_,
                 'best_score': grid_search.best_score_
             }
-
+            
             self.save_to_pickle(grid_search, cv_name+'_grid_search')
         
         self.save_to_pickle(cv_results, 'all_cv_grid_search_results')
