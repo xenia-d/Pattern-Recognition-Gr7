@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split, GridSearchCV, KFold, LeaveOneOut
 from sklearn.preprocessing import LabelEncoder, normalize
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_auc_score, silhouette_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import  make_scorer, accuracy_score, f1_score, confusion_matrix, roc_auc_score, silhouette_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics.cluster import normalized_mutual_info_score
 import pickle
 
@@ -296,12 +296,19 @@ class GeneAnalysis:
             'No_cv': None
         }        
 
+        # Define the scoring metrics
+        scoring = {
+            'accuracy': make_scorer(accuracy_score),
+            'f1': make_scorer(f1_score, average='weighted'),
+            'roc_auc': make_scorer(roc_auc_score, multi_class='ovo', average='weighted')
+        }
+
         cv_results = {}
 
         pipeline, param_grid = self.get_pipeline_and_param_grid()
 
         for cv_name, cv_strategy in cv_methods.items():
-            grid_search = GridSearchCV(pipeline, param_grid, cv=cv_strategy, scoring='accuracy', n_jobs=-1)
+            grid_search = GridSearchCV(pipeline, param_grid, cv=cv_strategy, scoring=scoring, refit='f1', n_jobs=-1)
             grid_search.fit(self.X_train, self.y_train)
             
             # Save the results for this CV strategy
