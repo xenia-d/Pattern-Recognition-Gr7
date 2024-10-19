@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn import preprocessing
 import seaborn as sns
+import numpy as np
 import matplotlib.pyplot as plt
 import os
 from sklearn.decomposition import PCA
@@ -8,9 +9,14 @@ from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.pipeline import Pipeline
+from sklearn.cluster import KMeans
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV, KFold, LeaveOneOut
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics.cluster import normalized_mutual_info_score
+from sklearn.metrics import silhouette_score
 import pickle
 
 class GeneAnalysis:
@@ -38,7 +44,8 @@ class GeneAnalysis:
         return normalized
 
     def split_train_test(self, test_size):
-        return train_test_split(self.data, self.labels, test_size=test_size, random_state=self.random_state)
+        # gets train test split from NORMALIZED data
+        return train_test_split(self.data_normalized, self.labels, test_size=test_size, random_state=self.random_state)
         
     def print_number_of_rows_and_columns(self):
         rows = self.data.shape[0]
@@ -77,7 +84,6 @@ class GeneAnalysis:
             self.plot_PCA(use_normalized, data_pca, explained_variance, save)
 
         return data_pca, explained_variance
-
 
     def plot_PCA(self, is_normalized, data_pca, explained_variance, save=False):
         # Convert labels to numeric
@@ -127,6 +133,65 @@ class GeneAnalysis:
             plt.savefig(self.save_path+'/mutual_info.png', format='png', dpi=300)
             print(f"Plot saved as {self.save_path}'/mutual_info.png'")
 
+        if show:
+            plt.show(block=True)
+        plt.close(fig)
+
+    def run_kmeans(self):
+        kmeans = KMeans(n_clusters = 5, random_state = 0, n_init='auto')
+        kmeans.fit(self.data_normalized)
+
+        return kmeans
+    
+    def evaluate_clustering(self, kmeans):
+        mu_score = normalized_mutual_info_score(encoded_y, kmeans.labels_)
+        sil_score = silhouette_score(data_norm, kmeans.labels_, metric='euclidean')
+        return sil_score, mu_score
+
+    def plot_cluster_distribution(self, kmeans, save=True, show=True, dataset=None):
+        if dataset is None:
+            print("Please specify which dataset you are clustering with dataset=")
+            return
+        
+        df = pd.DataFrame({'Label': self.labels['Class'], 'Cluster': kmeans.labels_})
+        cluster_counts = df.groupby(['Cluster', 'True Label']).size().unstack(fill_value=0)
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        cluster_counts.plot(kind='bar', stacked=False, figsize=(10, 7))
+        ax.set_title("True Label Distribution in Each KMeans Cluster")
+        ax.set_xlabel("KMeans Cluster")
+        ax.set_ylabel("Count")
+
+        if save:
+            plt.savefig(self.save_path+'/'+dataset+'_cluster_class_distribution.png', format='png', dpi=300)
+            print(f"Plot saved as {self.save_path}/cluster_class_distribution.png")
+        if show:
+            plt.show(block=True)
+        plt.close(fig)
+
+    def plot_cluster_confusion_matrix(self, kmeans, save=True, show=True, dataset=None):
+        if dataset is None:
+            print("Please specify which dataset you are clustering with dataset=")
+            return
+        
+        label_encoder = LabelEncoder()
+        encoded_y = label_encoder.fit_transform(self.labels['Class'])
+
+        contingency_matrix = confusion_matrix(encoded_y, kmeans.labels_)
+
+        true_label_names = label_encoder.classes_
+        cluster_names = [f"Cluster {i}" for i in np.unique(kmeans.labels_)]
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(contingency_matrix, annot=True, fmt="d", cmap="Blues", 
+                    xticklabels=cluster_names, yticklabels=true_label_names)
+        ax.set_title("Contingency Table: True Labels vs KMeans Clusters")
+        ax.set_xlabel("KMeans Cluster")
+        ax.set_ylabel("True Label")
+        if save:
+            plt.savefig(self.save_path+'/'+dataset+'_cluster_confusion_matrix.png', format='png', dpi=300)
+            print(f"Plot saved as {self.save_path}/cluster_confusion_matrix.png")
         if show:
             plt.show(block=True)
         plt.close(fig)
