@@ -1,5 +1,4 @@
 import pandas as pd
-from sklearn import preprocessing
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,12 +10,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.cluster import KMeans
 from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV, KFold, LeaveOneOut
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split, GridSearchCV, KFold, LeaveOneOut
+from sklearn.preprocessing import LabelEncoder, normalize
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_auc_score, silhouette_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics.cluster import normalized_mutual_info_score
-from sklearn.metrics import silhouette_score
 import pickle
 
 class GeneAnalysis:
@@ -39,7 +36,7 @@ class GeneAnalysis:
         self.data_normalized = self.get_normalized_data()
 
     def get_normalized_data(self):
-        normalized = preprocessing.normalize(self.data)
+        normalized = normalize(self.data)
         normalized = pd.DataFrame(normalized, columns=self.data.columns)
         return normalized
 
@@ -144,8 +141,10 @@ class GeneAnalysis:
         return kmeans
     
     def evaluate_clustering(self, kmeans):
+        label_encoder = LabelEncoder()
+        encoded_y = label_encoder.fit_transform(self.labels['Class'])
         mu_score = normalized_mutual_info_score(encoded_y, kmeans.labels_)
-        sil_score = silhouette_score(data_norm, kmeans.labels_, metric='euclidean')
+        sil_score = silhouette_score(self.data_norm, kmeans.labels_, metric='euclidean')
         return sil_score, mu_score
 
     def plot_cluster_distribution(self, kmeans, save=True, show=True, dataset=None):
@@ -165,7 +164,7 @@ class GeneAnalysis:
 
         if save:
             plt.savefig(self.save_path+'/'+dataset+'_cluster_class_distribution.png', format='png', dpi=300)
-            print(f"Plot saved as {self.save_path}/cluster_class_distribution.png")
+            print(f"Plot saved as {self.save_path}'/'{dataset}'cluster_class_distribution.png")
         if show:
             plt.show(block=True)
         plt.close(fig)
@@ -191,7 +190,7 @@ class GeneAnalysis:
         ax.set_ylabel("True Label")
         if save:
             plt.savefig(self.save_path+'/'+dataset+'_cluster_confusion_matrix.png', format='png', dpi=300)
-            print(f"Plot saved as {self.save_path}/cluster_confusion_matrix.png")
+            print(f"Plot saved as {self.save_path}'/'{dataset}'_cluster_confusion_matrix.png")
         if show:
             plt.show(block=True)
         plt.close(fig)
@@ -329,3 +328,33 @@ class GeneAnalysis:
         with open(filename, 'wb') as file:
             pickle.dump(results, file)
         print(f"Results saved to {filename}")
+
+    def evaluate_model_on_test_set(self, model):
+        y_pred = model.predict(self.X_test)
+
+        acc = accuracy_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred)
+        roc_auc = roc_auc_score(self.y_test, y_pred, multi_class='ovo', average='weighted')
+        cm = confusion_matrix(self.y_test, y_pred, labels=self.labels['Class'].unique())
+
+        return acc, f1, roc_auc, cm
+    
+    def plot_confusion_matrix(self, cm, model_name=None, save=False, show=False):
+        if model_name is None:
+            print("Please specify which model you are plotting with model_name=")
+            return
+        disp = ConfusionMatrixDisplay(cm, display_labels=self.labels['Class'].unique())
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        disp.plot(ax=ax)
+        
+        plt.title('Confusion Matrix')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        if save:
+            plt.savefig(self.save_path+'/'+model_name+'_confusion_matrix.png', format='png', dpi=300)
+            print(f"Plot saved as {self.save_path}'/'{model_name}'_cluster_confusion_matrix.png")
+        if show:
+            plt.show(block=True)
+        plt.close(fig)
