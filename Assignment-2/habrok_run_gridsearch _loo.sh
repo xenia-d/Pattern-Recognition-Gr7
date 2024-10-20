@@ -36,7 +36,7 @@ tree $TMPDIR
 cd $TMPDIR/Assignment-2
 
 # Run training
-python3 run_gridsearch.py LeaveOneOut
+python3 run_gridsearch.py --cv LeaveOneOut
 
 ############ SAVING:
 

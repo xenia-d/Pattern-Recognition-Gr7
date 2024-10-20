@@ -36,7 +36,7 @@ tree $TMPDIR
 cd $TMPDIR/Assignment-2
 
 # Run training
-python3 run_gridsearch.py No_cv
+python3 run_gridsearch.py --cv No_cv
 
 ############ SAVING:
 
