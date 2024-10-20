@@ -26,7 +26,7 @@ mkdir -p $TMPDIR/Assignment-2/Data-PR-As2/Genes/
 
 # copy data into TMPDIR data folder
 # /Assignment-2/Data-PR-As2/Genes
-cp -r /scratch/$USER/pattern-rec/genes $TMPDIR/Assignment-2/Data-PR-As2/Genes
+cp -r /scratch/$USER/pattern-rec/genes/* $TMPDIR/Assignment-2/Data-PR-As2/Genes
 
 tree $TMPDIR
 
