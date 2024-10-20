@@ -1,3 +1,6 @@
 Assignment-2\Data-PR-As2\*
 *.jpg
 *.csv
+Assignment-2/__pycache__/GeneAnalysis.cpython-39.pyc
+Assignment-2/gridsearch_results/gridsearch_results.tar.gz
+Assignment-2/gridsearch_results/tmp/*
