@@ -20,7 +20,7 @@ class GeneAnalysis:
     def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots', random_state=12, test_size=0.2):
         self.data_path = data_path
         self.save_path = save_path
-        self.random_state = 12
+        self.random_state = random_state
         self.data_normalized = None
         self.data = None
         self.labels = None
@@ -409,7 +409,7 @@ class GeneAnalysis:
         return acc, f1, roc_auc, cm
     
     def plot_confusion_matrix(self, cm, model_name=None, save=False, show=False):
-        if model_name is None:
+        if save and model_name is None:
             print("Please specify which model you are plotting with model_name=")
             return
         disp = ConfusionMatrixDisplay(cm, display_labels=self.labels['Class'].unique())
