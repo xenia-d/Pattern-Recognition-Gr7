@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1                    # One task
 #SBATCH --cpus-per-task=50            # 50 CPU cores for parallelism
 #SBATCH --mem=32GB                    # Total memory for the job (adjust based on need)
-#SBATCH --time=00:30:00               # Time limit for the job (e.g., 2 hours)
+#SBATCH --time=12:00:00               # Time limit for the job (e.g., 2 hours)
 
 # remove all previously loaded modules
 module purge
@@ -36,9 +36,9 @@ tree $TMPDIR
 cd $TMPDIR/Assignment-2
 
 # Run training
-python3 run_gridsearch.py None
+python3 run_gridsearch.py KFold_3
 
 ############ SAVING:
 
 # Save models by compressing and copying from TMPDIR
-tar czvf /scratch/$USER/pattern-rec/results/gridsearch_results.tar.gz $TMPDIR/Assignment-2/gridsearch_results
+tar czvf /scratch/$USER/pattern-rec/results/KFold_3_gridsearch_results.tar.gz $TMPDIR/Assignment-2/gridsearch_results
