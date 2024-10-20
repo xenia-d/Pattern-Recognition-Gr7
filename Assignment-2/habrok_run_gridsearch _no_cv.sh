@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=gridsearch         # Job name
+#SBATCH --job-name=gridsearch_no_cv         # Job name
 #SBATCH --nodes=1                     # Number of nodes (use 1 node)
 #SBATCH --ntasks=1                    # One task
 #SBATCH --cpus-per-task=50            # 50 CPU cores for parallelism
