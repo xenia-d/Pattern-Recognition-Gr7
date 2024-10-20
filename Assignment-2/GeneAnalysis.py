@@ -216,7 +216,7 @@ class GeneAnalysis:
         # Defining classifiers
         rf = RandomForestClassifier(random_state=self.random_state)
         knn= KNeighborsClassifier()
-        svc = SVC(random_state=self.random_state)
+        svc = SVC(random_state=self.random_state, probability=True)
 
         # Define the parameter grid
         param_grid = [
@@ -343,17 +343,21 @@ class GeneAnalysis:
     def run_grid_search(self, testing=False):
 
         # Defining the cross-validation method
-        cv_methods = {
-            'KFold_3': KFold(n_splits=3),
-            'LeaveOneOut': LeaveOneOut(),
-            'No_cv': None
-        }        
+        if testing:
+            cv_methods = {'KFold_2': KFold(n_splits=2) }
+        else:
+            cv_methods = {
+                'KFold_3': KFold(n_splits=3),
+                'LeaveOneOut': LeaveOneOut(),
+                'No_cv': None
+            }        
+
 
         # Define the scoring metrics
         scoring = {
             'accuracy': make_scorer(accuracy_score),
-            'f1': make_scorer(f1_score, average='weighted'),
-            'roc_auc': make_scorer(roc_auc_score, multi_class='ovo', average='weighted')
+            'f1': make_scorer(f1_score, average='weighted')
+            # 'roc_auc': make_scorer(roc_auc_score, multi_class='ovo', average='weighted', labels=self.y_test)
         }
 
         cv_results = {}
@@ -395,16 +399,17 @@ class GeneAnalysis:
 
     def evaluate_model_on_test_set(self, model):
         y_pred = model.predict(self.X_test)
+        y_pred_proba = model.predict_proba(self.X_test)
 
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average='weighted')
-        roc_auc = roc_auc_score(self.y_test, y_pred, multi_class='ovo', average='weighted')
+        roc_auc = roc_auc_score(self.y_test, y_pred_proba, multi_class='ovo', average='weighted', labels=self.y_test['Class'].unique())
         cm = confusion_matrix(self.y_test, y_pred, labels=self.labels['Class'].unique())
 
         return acc, f1, roc_auc, cm
     
     def plot_confusion_matrix(self, cm, model_name=None, save=False, show=False):
-        if model_name is None:
+        if save and model_name is None:
             print("Please specify which model you are plotting with model_name=")
             return
         disp = ConfusionMatrixDisplay(cm, display_labels=self.labels['Class'].unique())
