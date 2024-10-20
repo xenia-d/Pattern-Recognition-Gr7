@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1                    # One task
 #SBATCH --cpus-per-task=50            # 50 CPU cores for parallelism
 #SBATCH --mem=32GB                    # Total memory for the job (adjust based on need)
-#SBATCH --time=00:15:00               # Time limit for the job (e.g., 2 hours)
+#SBATCH --time=00:30:00               # Time limit for the job (e.g., 2 hours)
 
 # remove all previously loaded modules
 module purge
