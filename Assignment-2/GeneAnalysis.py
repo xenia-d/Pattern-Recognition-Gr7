@@ -20,7 +20,7 @@ class GeneAnalysis:
     def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots', random_state=12, test_size=0.2):
         self.data_path = data_path
         self.save_path = save_path
-        self.random_state = random_state
+        self.random_state = 12
         self.data_normalized = None
         self.data = None
         self.labels = None
