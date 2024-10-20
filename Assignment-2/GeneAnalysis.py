@@ -339,7 +339,7 @@ class GeneAnalysis:
         
         return pipeline, param_grid
 
-    def get_cv_method(self, testing, cv):
+    def get_cv_method_and_data(self, testing, cv):
         final_X_train = self.X_train
         final_y_train = self.y_test
 
