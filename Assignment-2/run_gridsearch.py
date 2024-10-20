@@ -11,4 +11,4 @@ if __name__ == "__main__":
         cv_input = None
     
     genes = GeneAnalysis(save_path='gridsearch_results')
-    genes.run_grid_search(testing=True, cv=cv_input)
+    genes.run_grid_search(testing=False, cv=cv_input)
