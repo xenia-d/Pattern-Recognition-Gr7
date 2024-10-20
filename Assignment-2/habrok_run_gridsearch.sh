@@ -18,10 +18,10 @@ source $HOME/venvs/pattern-rec/bin/activate
 ############ GETTING PRE-TRAINED PRUNED MODEL:
 
 # make a directory in the TMPDIR
-mkdir $TMPDIR/Assignment-2
+mkdir $TMPDIR
 
 # copy code into TMPDIR
-cp -r /scratch/$USER/pattern-rec/Pattern-Recognition-Gr7/Assignment-2 $TMPDIR/Assignment-2
+cp -r /scratch/$USER/pattern-rec/Pattern-Recognition-Gr7/Assignment-2 $TMPDIR
 
 # copy data into TMPDIR data folder
 cp -r /scratch/$USER/pattern-rec/genes $TMPDIR/Assignment-2/Data-PR-As2/Genes
