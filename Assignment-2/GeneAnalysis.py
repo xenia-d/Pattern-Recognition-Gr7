@@ -20,7 +20,7 @@ class GeneAnalysis:
     def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots', random_state=12, test_size=0.2):
         self.data_path = data_path
         self.save_path = save_path
-        self.random_state = 12
+        self.random_state = random_state
         self.data_normalized = None
         self.data = None
         self.labels = None
@@ -341,7 +341,7 @@ class GeneAnalysis:
 
     def get_cv_method_and_data(self, testing, cv):
         final_X_train = self.X_train
-        final_y_train = self.y_test
+        final_y_train = self.y_train
 
         if testing:
             cv_methods = {'KFold_2': KFold(n_splits=2) }
@@ -352,14 +352,17 @@ class GeneAnalysis:
                 'LeaveOneOut': LeaveOneOut()
             }
         elif cv == 'KFold_3':
+            print("CV method: KFold_3")
             cv_methods = {
                 'KFold_3': KFold(n_splits=3)
             }
         elif cv == 'LeaveOneOut':
+            print("CV Method: LOO")
             cv_methods = {
                 'LeaveOneOut': LeaveOneOut()
             }
         elif cv == 'No_cv':
+            print("CV Method: No cv")
             # Step 1: Split the dataset into 80% training and 20% validation
             X_train, X_val, y_train, y_val = train_test_split(self.X_train, self.y_train, test_size=0.2, random_state=42)
 
