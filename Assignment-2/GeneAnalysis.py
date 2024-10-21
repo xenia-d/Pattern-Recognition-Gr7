@@ -292,6 +292,105 @@ class GeneAnalysis:
         ]
         
         return pipeline, param_grid
+    
+    def get_loo_pipeline_and_param_grid(self, loo_set):
+
+        # Create a pipeline with feature extraction followed by RandomForest
+        pipeline = Pipeline([
+            ('feature_selection', 'passthrough'),  # Step 1: Feature selection
+            ('classifier', 'passthrough')  # Step 2: RandomForest
+        ])
+
+        # Defining classifiers
+        rf = RandomForestClassifier(random_state=self.random_state)
+        knn= KNeighborsClassifier()
+        svc = SVC(random_state=self.random_state, probability=True)
+
+        # Define the parameter grid
+        if loo_set == 1: # Mutual info 
+            # Defining Feature Extraction
+            mutual_info = SelectKBest(score_func=mutual_info_classif)
+            param_grid = [
+                # Option 1a: Use SelectKBest with Mutual Information, RF
+                {
+                    'feature_selection': [mutual_info],
+                    'feature_selection__k': [20, 500, 1000, 5000],  # Number of top features to select
+                    'classifier__n_estimators': [100, 200, 500], 
+                    'classifier__max_depth': [None, 10, 20],
+                    'classifier': [rf]
+                },
+                # Option 1b: Use SelectKBest with Mutual Information, KNN
+                {
+                    'feature_selection': [mutual_info],
+                    'feature_selection__k': [20, 500, 1000, 5000],
+                    'classifier': [knn],
+                    'classifier__n_neighbors': [3, 5, 7],
+                    'classifier__weights': ['uniform', 'distance']
+                },
+                # Option 1c: Use SelectKBest with Mutual Information, SVC
+                {
+                    'feature_selection': [mutual_info],
+                    'feature_selection__k': [20, 500, 1000, 5000],
+                    'classifier': [svc],
+                    'classifier__C': [0.1, 1, 10], 
+                    'classifier__kernel': ['linear', 'rbf']
+                }
+            ]
+        
+        elif loo_set == 2: # PCA
+            # Defining Feature Extraction
+            pca = PCA()
+            # Option 2a: Use PCA, RF
+            param_grid = [{
+                    'feature_selection': [pca],
+                    'feature_selection__n_components': [3, 20, 50],
+                    'classifier__n_estimators': [100, 200, 500], 
+                    'classifier__max_depth': [None, 10, 20],
+                    'classifier': [rf]
+                },
+                # Option 2b: Use PCA, KNN
+                {
+                    'feature_selection': [pca],
+                    'feature_selection__n_components': [3, 20, 50],
+                    'classifier': [knn],
+                    'classifier__n_neighbors': [3, 5, 7],
+                    'classifier__weights': ['uniform', 'distance'] 
+                },
+                # Option 2c: Use SelectKBest with Mutual Information, SVC
+                {
+                    'feature_selection': [pca],
+                    'feature_selection__n_components': [3, 20, 50],
+                    'classifier': [svc],
+                    'classifier__C': [0.1, 1, 10],
+                    'classifier__kernel': ['linear', 'rbf']
+                }
+            ]
+        # No feature extraction
+        elif loo_set == 3:
+                # Option 3a: No feature extraction, RF
+                param_grid = [{
+                        'feature_selection': ['passthrough'],
+                        'classifier__n_estimators': [100, 200, 500], 
+                        'classifier__max_depth': [None, 10, 20],
+                        'classifier': [rf]
+                    },
+                    # Option 3b: No feature extraction, KNN
+                    {
+                        'feature_selection': ['passthrough'],
+                        'classifier': [knn],
+                        'classifier__n_neighbors': [3, 5, 7],
+                        'classifier__weights': ['uniform', 'distance'] 
+                    },
+                    # Option 3c: No feature extraction, SVC
+                    {
+                        'feature_selection': ['passthrough'], 
+                        'classifier': [svc],
+                        'classifier__C': [0.1, 1, 10],
+                        'classifier__kernel': ['linear', 'rbf']
+                    }
+                ]
+        
+        return pipeline, param_grid
 
     def get_pipeline_and_param_grid_TESTING_OUT(self):
         print("Initializing grid search pipeline and parameters.")
@@ -382,7 +481,7 @@ class GeneAnalysis:
             }
         return cv_methods, final_X_train, final_y_train
 
-    def run_grid_search(self, testing=False, cv=None):
+    def run_grid_search(self, testing=False, cv=None, loo_set=None):
         # Defining the cross-validation method
         cv_methods, final_X_train, final_y_train = self.get_cv_method_and_data(testing, cv)
 
@@ -396,6 +495,8 @@ class GeneAnalysis:
 
         if testing:
             pipeline, param_grid = self.get_pipeline_and_param_grid_TESTING_OUT()
+        elif cv == 'LeaveOneOut':
+            pipeline, param_grid = self.get_loo_pipeline_and_param_grid(loo_set)
         else:
             pipeline, param_grid = self.get_pipeline_and_param_grid()
 

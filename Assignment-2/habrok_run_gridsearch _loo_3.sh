@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=gridsearch_loo         # Job name
+#SBATCH --job-name=gridsearch_loo_3         # Job name
 #SBATCH --output=loo-job-%j.log
 #SBATCH --nodes=1                     # Number of nodes (use 1 node)
 #SBATCH --ntasks=1                    # One task
@@ -37,9 +37,9 @@ tree $TMPDIR
 cd $TMPDIR/Assignment-2
 
 # Run training
-python3 run_gridsearch.py --cv LeaveOneOut
+python3 run_gridsearch.py --cv LeaveOneOut -loo_set 3
 
 ############ SAVING:
 
 # Save models by compressing and copying from TMPDIR
-tar czvf /scratch/$USER/pattern-rec/results/LeaveOneOut_gridsearch_results.tar.gz $TMPDIR/Assignment-2/gridsearch_results
+tar czvf /scratch/$USER/pattern-rec/results/LeaveOneOut_3_gridsearch_results.tar.gz $TMPDIR/Assignment-2/gridsearch_results
