@@ -6,3 +6,7 @@ Assignment-2/gridsearch_results/gridsearch_results.tar.gz
 Assignment-2/gridsearch_results/tmp/*
 Assignment-2/gridsearch_results/No_cv_gridsearch_results.tar.gz
 Assignment-2/gridsearch_results/KFold_3_gridsearch_results.tar.gz
+*.tar.gz
+Assignment-2/Genes_plots/LeaveOneOut1_grid_search.pkl
+Assignment-2/Genes_plots/LeaveOneOut2_grid_search.pkl
+Assignment-2/Genes_plots/LeaveOneOut3_grid_search.pkl

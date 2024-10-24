@@ -4,7 +4,7 @@
 #SBATCH --nodes=1                     # Number of nodes (use 1 node)
 #SBATCH --ntasks=1                    # One task
 #SBATCH --cpus-per-task=100            # 100 CPU cores for parallelism
-#SBATCH --mem=32GB                    # Total memory for the job (adjust based on need)
+#SBATCH --mem=64GB                    # Total memory for the job (adjust based on need)
 #SBATCH --time=24:00:00               # Time limit for the job (e.g., 2 hours)
 
 # remove all previously loaded modules

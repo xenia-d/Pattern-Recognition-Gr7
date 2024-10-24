@@ -98,7 +98,7 @@ class GeneAnalysis:
         cbar = plt.colorbar(scatter, ax=ax, ticks=range(len(uniques)))
         cbar.ax.set_yticklabels(uniques)  # Set colorbar labels to the original class names
 
-        ax.set_title('PCA Visualization of Data')
+        ax.set_title('PCA Visualization of Genes Dataset')
         ax.set_xlabel(f'Principal Component 1 ({explained_variance[0] * 100:.2f}% variance)')
         ax.set_ylabel(f'Principal Component 2 ({explained_variance[1] * 100:.2f}% variance)')
 
@@ -211,7 +211,7 @@ class GeneAnalysis:
 
         # Defining Feature Extraction
         mutual_info = SelectKBest(score_func=mutual_info_classif)
-        pca = PCA()
+        pca = PCA(random_state=self.random_state)
 
         # Defining classifiers
         rf = RandomForestClassifier(random_state=self.random_state)
