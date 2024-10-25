@@ -12,10 +12,15 @@ import pickle
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import classification_report, accuracy_score, f1_score, roc_curve, auc
 from sklearn.semi_supervised import LabelPropagation
+from sklearn.neighbors import KNeighborsClassifier
+import os
 
 
 
-data = pd.read_csv('Data-PR-As2\creditcard.csv')
+output_dir = 'task2_plots'
+os.makedirs(output_dir, exist_ok=True)
+
+data = pd.read_csv('Data-PR-As2/creditcard.csv')
 
 X = data.drop(columns = ['Time','Amount','Class'])
 y = data['Class']
@@ -23,7 +28,7 @@ y = data['Class']
 print(f"Original class distribution: {Counter(y)}")
 
 baseline_accuracies, semi_supervised_accuracies, retrained_accuracies = [], [], []
-baseline_roc_aucs, semi_supervised_roc_aucs, retrained_roc_aucs = [], [], []
+baseline_f1s, semi_supervised_f1s, retrained_f1s = [], [], []
 
 
 # Balancing the data 
@@ -35,82 +40,142 @@ X_balanced, y_balanced = smote.fit_resample(X, y)
 print(f"Balanced class distribution: {Counter(y_balanced)}")
 
 
-# Split into train / test (80-20)
-X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size = 0.2, stratify = y_balanced, random_state = 12)
+for i in range(100):
 
-# Split train set into labled / unlabeled (30-70)
-X_train_lab, X_train_unlab, y_train_lab, y_train_unlab = train_test_split(X_train, y_train, test_size=0.7, stratify=y_train, random_state=12)
+    print("This is iteration: ", i)
 
+    # Split into train / test (80-20)
+    X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size = 0.2, stratify = y_balanced, random_state = 12)
 
-print(f"Train set class distribution: {Counter(y_train)}")
-print(f"Test set class distribution: {Counter(y_test)}")
-
-
-###################################### BASELINE MODEL - step 2 #####################################
-
-rf = RandomForestClassifier(n_estimators=100, random_state=12)
-rf.fit(X_train_lab, y_train_lab)
+    # Split train set into labled / unlabeled (30-70)
+    X_train_lab, X_train_unlab, y_train_lab, y_train_unlab = train_test_split(X_train, y_train, test_size=0.7, stratify=y_train, random_state=12)
 
 
-y_pred = rf.predict(X_test)
-accuracy_baseline = accuracy_score(y_test, y_pred)
-print("Accuracy of baseline:", accuracy_baseline)
-
-f1_baseline = f1_score(y_test, y_pred)
-print("F1 Score of baseline:", f1_baseline)
+    print(f"Train set class distribution: {Counter(y_train)}")
+    print(f"Test set class distribution: {Counter(y_test)}")
 
 
-baseline_accuracies.append(accuracy_score(y_test, y_pred))
-fpr, tpr, _ = roc_curve(y_test, rf.predict_proba(X_test)[:, 1])
-baseline_roc_aucs.append(auc(fpr, tpr))
+    ###################################### BASELINE MODEL - step 2 #####################################
+
+    baseline_knn = KNeighborsClassifier()
+    baseline_knn.fit(X_train_lab, y_train_lab)
 
 
-###################################### SEMI-SUPERVISED MODEL - step 3 #####################################
-# https://medium.com/geekculture/semi-supervised-learning-label-propagation-for-classification-1963439531cb
+    y_pred = baseline_knn.predict(X_test)
+    accuracy_baseline = accuracy_score(y_test, y_pred)
+    print("Accuracy of baseline:", accuracy_baseline)
 
-y_train_unlab[:] = -1
-
-X_train_semi_sup = np.vstack((X_train_lab, X_train_unlab))
-y_train_semi_sup = np.concatenate((y_train_lab, y_train_unlab))
-
-semi_sup_model = LabelPropagation(kernel='knn')
-semi_sup_model.fit(X_train_semi_sup, y_train_semi_sup)
-
-y_pred = semi_sup_model.predict(X_test)
+    f1_baseline = f1_score(y_test, y_pred)
+    print("F1 Score of baseline:", f1_baseline)
 
 
-accuracy_semi_sup = accuracy_score(y_test, y_pred)
-f1_semi_sup = f1_score(y_test, y_pred)
-
-print("Accuracy of Semi-supervised model: ", accuracy_semi_sup)
-print("F1 Score of Semi-supervised model: ", f1_semi_sup)
+    baseline_accuracies.append(accuracy_score(y_test, y_pred))
+    baseline_f1s.append(f1_baseline)
 
 
-class_distribution = Counter(y_train_semi_sup.flatten())
-print("Class distribution in semi-supervised training set: ", class_distribution)
+    ###################################### SEMI-SUPERVISED MODEL - step 3 #####################################
+    # https://medium.com/geekculture/semi-supervised-learning-label-propagation-for-classification-1963439531cb
 
-semi_supervised_accuracies.append(accuracy_score(y_test, y_pred))
-fpr, tpr, _ = roc_curve(y_test, semi_sup_model.predict_proba(X_test)[:, 1])
-semi_supervised_roc_aucs.append(auc(fpr, tpr))
+    y_train_unlab[:] = -1
 
+    X_train_semi_sup = np.vstack((X_train_lab, X_train_unlab))
+    y_train_semi_sup = np.concatenate((y_train_lab, y_train_unlab))
 
-############################## RETRAINED BASELINE WITH RETRIEVED LABELS - step 4 #############################
+    semi_sup_model = LabelPropagation(kernel='knn')
+    semi_sup_model.fit(X_train_semi_sup, y_train_semi_sup)
 
-retrieved_labels = semi_sup_model.transduction_
-
-retrained_baseline = RandomForestClassifier(n_estimators=100, random_state=12)
-retrained_baseline.fit(X_train, retrieved_labels)
-
-y_pred_retrained = retrained_baseline.predict(X_test)
-
-accuracy_retrained_rf = accuracy_score(y_test, y_pred_retrained)
-f1_retrained_rf = f1_score(y_test, y_pred_retrained)
-
-print("Accuracy: of retrained baseline ", accuracy_retrained_rf)
-print("F1 Score of retrained baseline: ", f1_retrained_rf)
-
-retrained_accuracies.append(accuracy_score(y_test, y_pred_retrained))
-fpr, tpr, _ = roc_curve(y_test, retrained_baseline.predict_proba(X_test)[:, 1])
-retrained_roc_aucs.append(auc(fpr, tpr))
+    y_pred = semi_sup_model.predict(X_test)
 
 
+    accuracy_semi_sup = accuracy_score(y_test, y_pred)
+    f1_semi_sup = f1_score(y_test, y_pred)
+
+    print("Accuracy of Semi-supervised model: ", accuracy_semi_sup)
+    print("F1 Score of Semi-supervised model: ", f1_semi_sup)
+
+
+    class_distribution = Counter(y_train_semi_sup.flatten())
+    print("Class distribution in semi-supervised training set: ", class_distribution)
+
+    semi_supervised_accuracies.append(accuracy_score(y_test, y_pred))
+    semi_supervised_f1s.append(f1_semi_sup)
+
+
+
+    ############################## RETRAINED BASELINE WITH RETRIEVED LABELS - step 4 #############################
+
+    retrieved_labels = semi_sup_model.transduction_
+
+    retrained_baseline = KNeighborsClassifier()
+    retrained_baseline.fit(X_train, retrieved_labels)
+
+    y_pred_retrained = retrained_baseline.predict(X_test)
+
+    accuracy_retrained_baseline = accuracy_score(y_test, y_pred_retrained)
+    f1_retrained_baseline = f1_score(y_test, y_pred_retrained)
+
+    print("Accuracy: of retrained baseline ", accuracy_retrained_baseline)
+    print("F1 Score of retrained baseline: ", f1_retrained_baseline)
+
+    retrained_accuracies.append(accuracy_score(y_test, y_pred_retrained))
+    retrained_f1s.append(f1_retrained_baseline)
+
+
+
+
+
+# Plot accuracy across iterations
+iterations = range(1, 101)
+plt.plot(iterations, baseline_accuracies, label='Baseline KNN', color='blue')
+plt.plot(iterations, semi_supervised_accuracies, label='Semi-supervised', color='orange')
+plt.plot(iterations, retrained_accuracies, label='Retrained KNN', color='green')
+plt.xlabel('Iteration')
+plt.ylabel('Accuracy')
+plt.title('Iteration vs. Accuracy for Baseline, Semi-Supervised, and Retrained KNN Models')
+plt.legend()
+plt.show()
+
+
+# Save the figure
+acc_iter_path = os.path.join(output_dir, 'acc_vs_iter.png')
+plt.savefig(acc_iter_path)
+plt.close()
+
+
+
+# Prepare to plot ROC curves on the same axis
+plt.figure(figsize=(10, 8))
+
+# Plot ROC curve for Baseline KNN
+fpr_baseline, tpr_baseline, _ = roc_curve(y_test, baseline_knn.predict_proba(X_test)[:, 1])
+roc_auc_baseline = auc(fpr_baseline, tpr_baseline)
+plt.plot(fpr_baseline, tpr_baseline, color='blue', lw=2, label='Baseline KNN AUC = {:.2f}'.format(roc_auc_baseline))
+
+# Plot ROC curve for Semi-supervised model
+fpr_semi, tpr_semi, _ = roc_curve(y_test, semi_sup_model.predict_proba(X_test)[:, 1])
+roc_auc_semi = auc(fpr_semi, tpr_semi)
+plt.plot(fpr_semi, tpr_semi, color='orange', lw=2, label='Semi-supervised AUC = {:.2f}'.format(roc_auc_semi))
+
+# Plot ROC curve for Retrained KNN
+fpr_retrained, tpr_retrained, _ = roc_curve(y_test, retrained_baseline.predict_proba(X_test)[:, 1])
+roc_auc_retrained = auc(fpr_retrained, tpr_retrained)
+plt.plot(fpr_retrained, tpr_retrained, color='green', lw=2, label='Retrained KNN AUC = {:.2f}'.format(roc_auc_retrained))
+
+# Plot the diagonal line for random guessing
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--', lw=1)
+
+# Customize the plot
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curves for Baseline, Semi-supervised, and Retrained KNN Models')
+plt.legend(loc='lower right')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.grid(True)
+plt.tight_layout()
+
+
+# Save the figure
+roc_plot_path = os.path.join(output_dir, 'roc_curves.png')
+plt.savefig(roc_plot_path)
+plt.close()
