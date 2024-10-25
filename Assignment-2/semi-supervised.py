@@ -110,7 +110,7 @@ print("Accuracy: of retrained baseline ", accuracy_retrained_rf)
 print("F1 Score of retrained baseline: ", f1_retrained_rf)
 
 retrained_accuracies.append(accuracy_score(y_test, y_pred_retrained))
-fpr, tpr, _ = roc_curve(y_test, retrained_rf.predict_proba(X_test)[:, 1])
+fpr, tpr, _ = roc_curve(y_test, retrained_baseline.predict_proba(X_test)[:, 1])
 retrained_roc_aucs.append(auc(fpr, tpr))
 
 
