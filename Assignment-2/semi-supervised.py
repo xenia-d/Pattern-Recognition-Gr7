@@ -10,9 +10,10 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 import pickle
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import classification_report, accuracy_score, f1_score, roc_curve, auc
+from sklearn.metrics import classification_report, accuracy_score, f1_score, roc_curve, auc, roc_auc_score
 from sklearn.semi_supervised import LabelPropagation
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import label_binarize
 import os
 
 
@@ -40,7 +41,7 @@ X_balanced, y_balanced = smote.fit_resample(X, y)
 print(f"Balanced class distribution: {Counter(y_balanced)}")
 
 
-for i in range(100):
+for i in range(1):
 
     print("This is iteration: ", i)
 
@@ -122,10 +123,26 @@ for i in range(100):
 
 
 
+# Calculate mean accuracy and F1 score for each model
+mean_accuracy_baseline = np.mean(baseline_accuracies)
+mean_f1_baseline = np.mean(baseline_f1s)
 
+mean_accuracy_semi_supervised = np.mean(semi_supervised_accuracies)
+mean_f1_semi_supervised = np.mean(semi_supervised_f1s)
+
+mean_accuracy_retrained = np.mean(retrained_accuracies)
+mean_f1_retrained = np.mean(retrained_f1s)
+
+
+
+# Print the mean values
+print(f"\nMean accuracy and F1 scores over 100 iterations:\n")
+print(f"Baseline KNN - Mean Accuracy: {mean_accuracy_baseline:.4f}, Mean F1 Score: {mean_f1_baseline:.4f}")
+print(f"Semi-supervised - Mean Accuracy: {mean_accuracy_semi_supervised:.4f}, Mean F1 Score: {mean_f1_semi_supervised:.4f}")
+print(f"Retrained KNN - Mean Accuracy: {mean_accuracy_retrained:.4f}, Mean F1 Score: {mean_f1_retrained:.4f}")
 
 # Plot accuracy across iterations
-iterations = range(1, 101)
+iterations = range(1)
 plt.plot(iterations, baseline_accuracies, label='Baseline KNN', color='blue')
 plt.plot(iterations, semi_supervised_accuracies, label='Semi-supervised', color='orange')
 plt.plot(iterations, retrained_accuracies, label='Retrained KNN', color='green')
@@ -151,10 +168,12 @@ fpr_baseline, tpr_baseline, _ = roc_curve(y_test, baseline_knn.predict_proba(X_t
 roc_auc_baseline = auc(fpr_baseline, tpr_baseline)
 plt.plot(fpr_baseline, tpr_baseline, color='blue', lw=2, label='Baseline KNN AUC = {:.2f}'.format(roc_auc_baseline))
 
-# Plot ROC curve for Semi-supervised model
-fpr_semi, tpr_semi, _ = roc_curve(y_test, semi_sup_model.predict_proba(X_test)[:, 1])
-roc_auc_semi = auc(fpr_semi, tpr_semi)
-plt.plot(fpr_semi, tpr_semi, color='orange', lw=2, label='Semi-supervised AUC = {:.2f}'.format(roc_auc_semi))
+# Plot ROC curve for Semi-supervised model (using one-vs-rest approximation)
+y_test_binarized = label_binarize(y_test, classes=[0, 1])
+y_pred_semi_sup = label_binarize(semi_sup_model.predict(X_test), classes=[0, 1])
+fpr_semi, tpr_semi, _ = roc_curve(y_test_binarized.ravel(), y_pred_semi_sup.ravel())
+roc_auc_semi = roc_auc_score(y_test_binarized, y_pred_semi_sup, average="macro")
+plt.plot(fpr_semi, tpr_semi, color='orange', lw=2, label='Semi-supervised AUC (OvR) = {:.2f}'.format(roc_auc_semi))
 
 # Plot ROC curve for Retrained KNN
 fpr_retrained, tpr_retrained, _ = roc_curve(y_test, retrained_baseline.predict_proba(X_test)[:, 1])
