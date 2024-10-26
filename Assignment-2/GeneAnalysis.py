@@ -303,7 +303,7 @@ class GeneAnalysis:
 
         # Defining classifiers
         rf = RandomForestClassifier(random_state=self.random_state)
-        knn= KNeighborsClassifier()
+        knn = KNeighborsClassifier()
         svc = SVC(random_state=self.random_state, probability=True)
 
         # Define the parameter grid
@@ -531,14 +531,18 @@ class GeneAnalysis:
             pickle.dump(results, file)
         print(f"Results saved to {filename}")
 
-    def evaluate_model_on_test_set(self, model):
+    def evaluate_model_on_test_set(self, model_params):
+        pipeline, _ = self.get_pipeline_and_param_grid()
+        pipeline.set_params(**model_params.params)
+        model = pipeline.fit(self.X_train, self.y_train)
+        
         y_pred = model.predict(self.X_test)
         y_pred_proba = model.predict_proba(self.X_test)
 
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average='weighted')
-        roc_auc = roc_auc_score(self.y_test, y_pred_proba, multi_class='ovo', average='weighted', labels=self.y_test['Class'].unique())
-        cm = confusion_matrix(self.y_test, y_pred, labels=self.labels['Class'].unique())
+        roc_auc = roc_auc_score(self.y_test, y_pred_proba, multi_class='ovo', average='weighted', labels=np.unique(self.y_test))
+        cm = confusion_matrix(self.y_test, y_pred, labels=np.unique(self.y_test))
 
         return acc, f1, roc_auc, cm
     
@@ -561,3 +565,109 @@ class GeneAnalysis:
         if show:
             plt.show(block=True)
         plt.close(fig)
+    
+    def train_final_knn_model(self, parameter_set):
+        # feature selection initialisation and application not implemented
+        n_neighbors = parameter_set[0]
+        weights = parameter_set[1]
+        model = KNeighborsClassifier(n_neighbors=n_neighbors, weights=weights)
+        model.fit(self.X_train, self.y_train)
+        return model
+    
+    def load_gridsearch_results(self, file_name):
+        with open(file_name, 'rb') as file:
+            grid_search_results = pickle.load(file)
+        
+        return grid_search_results
+        
+
+    def create_ranked_lists(self, grid_search_results):
+
+        cv_results = grid_search_results.cv_results_
+        
+        df = pd.DataFrame({
+            'mean_fit_time': cv_results['mean_fit_time'],
+            'mean_score_time': cv_results['mean_score_time'],
+            'mean_test_f1': cv_results['mean_test_f1'],
+            'params': cv_results['params']  
+        })
+
+        # Extract F1 scores
+        f1_scores = cv_results.get('mean_test_f1', None)
+        
+        if f1_scores is not None:
+            # Count how many have a perfect F1 score 
+            perfect_f1_count = sum(1 for score in f1_scores if score == 1.0)
+            if perfect_f1_count == 0:
+                print("###### No models have F1 score of 1 ######")
+                return None, None, None
+            print(f"Number of models with a perfect F1 score: {perfect_f1_count}")
+
+
+        # Filter out models that dont have perfect f1 score
+        df_perfect_f1 = df[df['mean_test_f1'] == 1.0]
+
+        # Rank models based on mean_score_time
+        df_ranked_by_score_time = df_perfect_f1.sort_values(by='mean_score_time', ascending=True).reset_index(drop=True)
+
+        # Rank models based on mean_fit_time
+        df_ranked_by_fit_time = df_perfect_f1.sort_values(by='mean_fit_time', ascending=True).reset_index(drop=True)
+
+        # Rank models based on the combined time
+        df_combined = df_perfect_f1.copy()
+        df_combined['combined_time'] = df_perfect_f1['mean_score_time'] + df_perfect_f1['mean_fit_time']
+        df_ranked_by_combined_time = df_combined.sort_values(by='combined_time', ascending=True).reset_index(drop=True)
+
+
+        return df_ranked_by_score_time, df_ranked_by_fit_time, df_ranked_by_combined_time
+
+    def find_best_model_params_for_cv_method(self, cv_method, print_all=False):
+        results = []
+        if cv_method == 'loo':
+            for i in [1,2,3]:
+                results.append(self.load_gridsearch_results(f'Genes_plots/LeaveOneOut{i}_grid_search.pkl'))
+        elif cv_method == 'No_cv':
+            results.append(self.load_gridsearch_results('Genes_plots/No_cv_grid_search.pkl'))
+        elif cv_method == 'KFold_3':
+            results.append(self.load_gridsearch_results(f'Genes_plots/{cv_method}_grid_search.pkl'))
+        
+        best_by_combined_time={}
+
+        for n, result in enumerate(results):
+            if cv_method == 'loo':
+                print(f"######## LOO NUMBER {n+1} ########")
+            
+            ranked_by_score_time, ranked_by_fit_time, ranked_by_combined_time = self.create_ranked_lists(result)
+            if ranked_by_combined_time is None:
+                continue
+            
+            if print_all:
+                # Print Ranked by Mean Score Time
+                print("Ranked by Mean Score Time:")
+                print(ranked_by_score_time[['mean_score_time', 'mean_test_f1', 'params']])
+
+                # Print Ranked by Mean Fit Time
+                print("\nRanked by Mean Fit Time:")
+                print(ranked_by_fit_time[['mean_fit_time', 'mean_test_f1', 'params']])
+
+                # Print Ranked by Combined Time (mean_score_time + mean_fit_time)
+                print("\nRanked by Combined Time:")
+                print(ranked_by_combined_time[['combined_time', 'mean_test_f1', 'params']])
+            if cv_method == 'loo':
+                best_by_combined_time[n+1] = ranked_by_combined_time.iloc[0]
+
+        if cv_method == 'loo':
+            min_combined_time = 1000
+            best_index = -1
+            best_params = None
+            for n in best_by_combined_time.keys():
+                if best_by_combined_time[n]['combined_time'] < min_combined_time:
+                    min_combined_time = best_by_combined_time[n]['combined_time']
+                    best_index = n
+                    best_params = best_by_combined_time[n]
+            print("BEST PARAMETERS IN TERMS OF COMBINED TIME:", best_params)
+            return best_params
+        else:
+            print("BEST PARAMETERS IN TERMS OF COMBINED TIME:", ranked_by_combined_time.iloc[0])
+            return ranked_by_combined_time.iloc[0]
+    
