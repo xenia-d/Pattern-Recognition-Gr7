@@ -1,10 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=attempt1
-#SBATCH --time=0:30:00
+#SBATCH --time=3:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gpus-per-node=a100:1
-#SBATCH --mem=16GB                                            
+#SBATCH --cpus-per-task=32           # 100 CPU cores for parallelism
+#SBATCH --mem=16GB 
 
 # remove all previously loaded modules
 module purge
