@@ -16,3 +16,4 @@ Assignment-2/LeaveOneOut2_grid_search.pkl
 Assignment-2/LeaveOneOut3_grid_search.pkl
 Assignment-2/__pycache__/GeneAnalysis.cpython-310.pyc
 Assignment-2/__pycache__/GeneAnalysis.cpython-39.pyc
+*.pyc
