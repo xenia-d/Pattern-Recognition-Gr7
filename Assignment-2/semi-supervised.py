@@ -6,15 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
 from imblearn.over_sampling import SMOTE
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
-import pickle
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import classification_report, accuracy_score, f1_score, roc_curve, auc, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.semi_supervised import LabelPropagation
 from sklearn.neighbors import KNeighborsClassifier
 import os
-from sklearn.preprocessing import label_binarize
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
