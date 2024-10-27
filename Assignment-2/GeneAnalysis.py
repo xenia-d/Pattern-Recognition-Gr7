@@ -22,7 +22,7 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
 
-    """ Class that handles pipeline for genes dataset """
+###### Class that handles pipeline for genes dataset 
 
 class GeneAnalysis:
     def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_results', random_state=12, test_size=0.2):
@@ -186,11 +186,11 @@ class GeneAnalysis:
         results = []
         if cv_method == 'LeaveOneOut':
             for i in [1,2,3]:
-                results.append(self.load_gridsearch_results(f'Genes_plots/LeaveOneOut{i}_grid_search.pkl'))
+                results.append(self.load_gridsearch_results(f'Genes_results/LeaveOneOut{i}_grid_search.pkl'))
         elif cv_method == 'No_cv':
-            results.append(self.load_gridsearch_results('Genes_plots/No_cv_grid_search.pkl'))
+            results.append(self.load_gridsearch_results('Genes_results/No_cv_grid_search.pkl'))
         elif cv_method == 'KFold_3':
-            results.append(self.load_gridsearch_results(f'Genes_plots/{cv_method}_grid_search.pkl'))
+            results.append(self.load_gridsearch_results(f'Genes_results/{cv_method}_grid_search.pkl'))
 
         cv_results = results[0].cv_results_
         
@@ -753,11 +753,11 @@ class GeneAnalysis:
         results = []
         if cv_method == 'LeaveOneOut':
             for i in [1, 2, 3]:
-                results.append(self.load_gridsearch_results(f'Genes_plots/LeaveOneOut{i}_grid_search.pkl'))
+                results.append(self.load_gridsearch_results(f'Genes_results/LeaveOneOut{i}_grid_search.pkl'))
         elif cv_method == 'No_cv':
-            results.append(self.load_gridsearch_results('Genes_plots/No_cv_grid_search.pkl'))
+            results.append(self.load_gridsearch_results('Genes_results/No_cv_grid_search.pkl'))
         elif cv_method == 'KFold_3':
-            results.append(self.load_gridsearch_results(f'Genes_plots/{cv_method}_grid_search.pkl'))
+            results.append(self.load_gridsearch_results(f'Genes_results/{cv_method}_grid_search.pkl'))
         
         # Extract F1 scores from all loaded results
         f1_scores = []
@@ -790,11 +790,11 @@ class GeneAnalysis:
         results = []
         if cv_method == 'LeaveOneOut':
             for i in [1,2,3]:
-                results.append(self.load_gridsearch_results(f'Genes_plots/LeaveOneOut{i}_grid_search.pkl'))
+                results.append(self.load_gridsearch_results(f'Genes_results/LeaveOneOut{i}_grid_search.pkl'))
         elif cv_method == 'No_cv':
-            results.append(self.load_gridsearch_results('Genes_plots/No_cv_grid_search.pkl'))
+            results.append(self.load_gridsearch_results('Genes_results/No_cv_grid_search.pkl'))
         elif cv_method == 'KFold_3':
-            results.append(self.load_gridsearch_results(f'Genes_plots/{cv_method}_grid_search.pkl'))
+            results.append(self.load_gridsearch_results(f'Genes_results/{cv_method}_grid_search.pkl'))
         
         best_by_combined_time={}
 
@@ -900,7 +900,7 @@ class GeneAnalysis:
                 continue
             
             # Load grid search results for the other cv_method
-            grid_search_results = self.load_gridsearch_results(f'Genes_plots/{method}_grid_search.pkl')
+            grid_search_results = self.load_gridsearch_results(f'Genes_results/{method}_grid_search.pkl')
             
             # Find the corresponding scores for the best model params
             cv_results = grid_search_results.cv_results_
@@ -947,11 +947,11 @@ class GeneAnalysis:
         
         if cv_method == 'LeaveOneOut':
             for i in [1, 2, 3]:
-                results.append(self.load_gridsearch_results(f'Genes_plots/LeaveOneOut{i}_grid_search.pkl'))
+                results.append(self.load_gridsearch_results(f'Genes_results/LeaveOneOut{i}_grid_search.pkl'))
         elif cv_method == 'No_cv':
-            results.append(self.load_gridsearch_results('Genes_plots/No_cv_grid_search.pkl'))
+            results.append(self.load_gridsearch_results('Genes_results/No_cv_grid_search.pkl'))
         elif cv_method == 'KFold_3':
-            results.append(self.load_gridsearch_results(f'Genes_plots/KFold_3_grid_search.pkl'))
+            results.append(self.load_gridsearch_results(f'Genes_results/KFold_3_grid_search.pkl'))
         
         return results
 
