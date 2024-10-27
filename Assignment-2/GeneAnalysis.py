@@ -1,6 +1,5 @@
 import warnings
 from sklearn.exceptions import InconsistentVersionWarning
-
 # Suppress InconsistentVersionWarning
 warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
@@ -23,8 +22,10 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
 
+    """ Class that handles pipeline for genes dataset """
+
 class GeneAnalysis:
-    def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_plots', random_state=12, test_size=0.2):
+    def __init__(self, data_path='Data-PR-As2/Genes', save_path='Genes_results', random_state=12, test_size=0.2):
         self.data_path = data_path
         self.save_path = save_path
         self.random_state = random_state
@@ -36,8 +37,8 @@ class GeneAnalysis:
         self.y_train = self.y_train.values.ravel()
         self.y_test = self.y_test.values.ravel()
         
-
     def import_data_and_labels(self):
+        # Importing the data
         labels = pd.read_csv(os.path.join(self.data_path,'labels.csv'))
         self.labels = labels.drop(labels='Unnamed: 0', axis=1)
         data = pd.read_csv(self.data_path+'/data.csv')
@@ -46,6 +47,7 @@ class GeneAnalysis:
         print("Data has been loaded.")
 
     def get_normalized_data(self):
+        # Normalizing according to L2 norm
         normalized = normalize(self.data)
         normalized = pd.DataFrame(normalized, columns=self.data.columns)
         ("Data has been normalized.")
@@ -64,6 +66,7 @@ class GeneAnalysis:
         print("Number of columns in data:", columns)
 
     def class_distribution_barplot(self, show=True, save=False):
+        # Make a plot showing the class distributions
         class_counts = self.labels['Class'].value_counts()
 
         fig, ax = plt.subplots()
@@ -80,6 +83,7 @@ class GeneAnalysis:
         plt.close(fig)
     
     def apply_PCA(self, use_normalized=True, plot=True, save=False):
+        # Apply PCA to a dataset
         if use_normalized:
             data_numeric = self.data_normalized.apply(pd.to_numeric, errors='coerce').dropna(axis=0)
         else:
@@ -95,7 +99,7 @@ class GeneAnalysis:
         return data_pca, explained_variance
 
     def plot_PCA(self, is_normalized, data_pca, explained_variance, save=False):
-        # Convert labels to numeric
+        # Plot PCA to a 2D plot
         labels_numeric, uniques = pd.factorize(self.labels.iloc[:, 0].values)  # Use first column
         
         fig, ax = plt.subplots(figsize=(10, 8))
@@ -121,21 +125,15 @@ class GeneAnalysis:
         plt.close(fig)
     
     def plot_PCA_3D(self, is_normalized, data_pca, explained_variance, save=False):
-        # Convert labels to numeric
-        labels_numeric, uniques = pd.factorize(self.labels.iloc[:, 0].values)  # Use first column
+        #Plot PCA to a 3D plot
         
-        # Create a 3D figure
+        labels_numeric, uniques = pd.factorize(self.labels.iloc[:, 0].values)  # Use first column
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111, projection='3d')
-        
-        # Create a 3D scatter plot
         scatter = ax.scatter(data_pca[:, 0], data_pca[:, 1], data_pca[:, 2], c=labels_numeric, cmap='viridis', s=50)
-        
-        # Create a colorbar with unique class labels
         cbar = plt.colorbar(scatter, ax=ax, ticks=range(len(uniques)))
         cbar.ax.set_yticklabels(uniques)  # Set colorbar labels to the original class names
         
-        # Set plot titles and axis labels
         ax.set_title('3D PCA Visualization of Genes Dataset')
         ax.set_xlabel(f'PC 1 ({explained_variance[0] * 100:.2f}% variance)')
         ax.set_ylabel(f'PC 2 ({explained_variance[1] * 100:.2f}% variance)')
@@ -150,21 +148,23 @@ class GeneAnalysis:
                 plt.savefig(self.save_path+'/PCA_3D.png', format='png', dpi=300)
                 print(f"Plot saved as {self.save_path}/PCA_3D.png")
         
-        # Display the plot
         plt.show(block=True)
         plt.close(fig)
 
     def get_mutual_info(self):
+        # Get the mutual information scores of features in the data
         mutual_info = mutual_info_classif(self.X_train, self.y_train.values.ravel())
         return mutual_info
     
     def get_top_k(self, k, data):
+        # Get the top k mutual information scores of features in the data
         feature_scores = pd.Series(data, index=self.X_train.columns)
         top_features = feature_scores.sort_values(ascending=False).head(k).index
         
         return top_features
     
     def plot_mutual_info(self, mut_inf, save=False, show=True):
+        # Plot barplot of mutual information scores
         mut_inf = pd.Series(mut_inf)
         fig, ax = plt.subplots(figsize=(20, 8))
         mut_inf.sort_values(ascending=False).plot.bar(ax=ax)
@@ -181,6 +181,8 @@ class GeneAnalysis:
         plt.close(fig)
 
     def find_best_reduced_dataset(self, cv_method):
+        # Find the best reduced dataset from the given cv_method results
+
         results = []
         if cv_method == 'LeaveOneOut':
             for i in [1,2,3]:
@@ -236,6 +238,7 @@ class GeneAnalysis:
         return best_method
 
     def apply_feature_reduction(self, params, plot):
+        # Apply given feature reduction to original dataset
         if type(params['feature_extraction']) == type(SelectKBest()):
             mutual_info = mutual_info_classif(self.data_normalized, self.labels.values.ravel())
             feature_scores = pd.Series(mutual_info, index=self.data.columns)
@@ -266,6 +269,7 @@ class GeneAnalysis:
         return kmeans
     
     def evaluate_clustering(self, kmeans):
+        # Evaluate clustering on silhouette and mutual information scores
         label_encoder = LabelEncoder()
         encoded_y = label_encoder.fit_transform(self.labels['Class'])
         mu_score = normalized_mutual_info_score(encoded_y, kmeans.labels_)
@@ -274,6 +278,7 @@ class GeneAnalysis:
         return sil_score, mu_score
 
     def plot_cluster_distribution(self, kmeans, save=True, show=True, dataset=None):
+        # Bar plot of number of samples per class in each cluster
         if dataset is None:
             print("Please specify which dataset you are clustering with dataset=")
             return
@@ -296,6 +301,7 @@ class GeneAnalysis:
         plt.close(fig)
 
     def plot_cluster_confusion_matrix(self, kmeans, save=True, show=True, dataset=None):
+        # Make confusion matrix of clusters vs true labels 
         if dataset is None:
             print("Please specify which dataset you are clustering with dataset=")
             return
@@ -322,8 +328,6 @@ class GeneAnalysis:
         plt.close(fig)
     
     def get_pipeline_and_param_grid(self):
-
-        # Create a pipeline with feature extraction followed by RandomForest
         pipeline = Pipeline([
             ('feature_selection', 'passthrough'),  # Step 1: Feature selection
             ('classifier', 'passthrough')  # Step 2: RandomForest
@@ -414,7 +418,7 @@ class GeneAnalysis:
         return pipeline, param_grid
     
     def get_loo_pipeline_and_param_grid(self, loo_set):
-
+        # Specifically for running LeaveOneOut CV, to allow running a subset of the parameter grid
         # Create a pipeline with feature extraction followed by RandomForest
         pipeline = Pipeline([
             ('feature_selection', 'passthrough'),  # Step 1: Feature selection
@@ -513,11 +517,13 @@ class GeneAnalysis:
         return pipeline, param_grid
 
     def get_pipeline_and_param_grid_TESTING_OUT(self):
+        # Pipeline and params for testing out the grid search before runnign the full thing
+
         print("Initializing grid search pipeline and parameters.")
         # Create a pipeline with feature extraction followed by RandomForest
         pipeline = Pipeline([
-            ('feature_selection', 'passthrough'),  # Step 1: Feature selection
-            ('classifier', 'passthrough')  # Step 2: RandomForest
+            ('feature_selection', 'passthrough'),  
+            ('classifier', 'passthrough') 
         ])
 
         # Defining Feature Extraction
@@ -559,6 +565,8 @@ class GeneAnalysis:
         return pipeline, param_grid
 
     def get_cv_method_and_data(self, testing, cv):
+        # Retrieving the CV Method and corresponding dataset for gridsearch
+
         final_X_train = self.X_train
         final_y_train = self.y_train
 
@@ -602,6 +610,8 @@ class GeneAnalysis:
         return cv_methods, final_X_train, final_y_train
 
     def run_grid_search(self, testing=False, cv=None, loo_set=None):
+        # Run the grid search
+
         # Defining the cross-validation method
         cv_methods, final_X_train, final_y_train = self.get_cv_method_and_data(testing, cv)
 
@@ -652,6 +662,7 @@ class GeneAnalysis:
         print(f"Results saved to {filename}")
 
     def evaluate_model_on_test_set(self, params):
+        # Refit model and evaluate on acc, f1, roc_auc, and confusion matrix
         pipeline, _ = self.get_pipeline_and_param_grid()
         pipeline.set_params(**params)
         model = pipeline.fit(self.X_train, self.y_train)
@@ -693,6 +704,7 @@ class GeneAnalysis:
         return grid_search_results
 
     def create_ranked_lists(self, grid_search_results, verbose=False):
+        # Get a ranked list of models based on their performance in grid search
 
         cv_results = grid_search_results.cv_results_
         
@@ -735,6 +747,8 @@ class GeneAnalysis:
         return perfect_f1_count, df_ranked_by_score_time, df_ranked_by_fit_time, df_ranked_by_combined_time
     
     def plot_f1_score_distribution(self, cv_method):
+        # Plot the distribution of F1 scores achieved by models in a grid search
+
         # Load results based on the CV method
         results = []
         if cv_method == 'LeaveOneOut':
@@ -769,6 +783,8 @@ class GeneAnalysis:
         plt.show()
 
     def find_best_model_params_for_cv_method(self, cv_method, print_all=False, verbose=False):
+        # Find the best model for given cv method
+
         if verbose:
             print(f"######## Evaluating {cv_method} Results")
         results = []
@@ -818,6 +834,8 @@ class GeneAnalysis:
             return ranked_by_combined_time.iloc[0]
     
     def plot_cv_method_metrics_comparison(self, cv_methods):
+        # Plot a comparison of performance over cv methods
+
         # Initialize lists to store metrics for each cv_method
         metrics = {'Accuracy': [], 'F1 Score': [], 'ROC AUC': []}
         cv_labels = []
@@ -923,7 +941,8 @@ class GeneAnalysis:
         plt.show()
 
     def load_gridsearch_results_for_cv_method(self, cv_method):
-        """Helper function to load grid search results based on the cv_method."""
+        # Helper function to load grid search results based on the cv_method.
+
         results = []
         
         if cv_method == 'LeaveOneOut':
