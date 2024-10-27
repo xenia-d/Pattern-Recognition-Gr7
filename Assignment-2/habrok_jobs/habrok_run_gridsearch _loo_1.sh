@@ -37,7 +37,7 @@ tree $TMPDIR
 cd $TMPDIR/Assignment-2
 
 # Run training
-python3 run_gridsearch.py --cv LeaveOneOut --loo_set 1
+python3 Genes_run_gridsearch.py --cv LeaveOneOut --loo_set 1
 
 ############ SAVING:
 
