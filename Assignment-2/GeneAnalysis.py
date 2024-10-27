@@ -1,8 +1,3 @@
-import warnings
-from sklearn.exceptions import InconsistentVersionWarning
-# Suppress InconsistentVersionWarning
-warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
-
 import pandas as pd
 import seaborn as sns
 import numpy as np
