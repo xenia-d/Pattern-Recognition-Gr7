@@ -15,7 +15,9 @@ This task includes the notebooks: image_figure.ipynb, image_classification.ipynb
 3. Inside Assignment-2/data decompress the dataset so that the folder structure is resembles what is shown below: 
 
 data
+
 |-- BigCats
+
     |-- Cheetah
     |-- Jaguar
     |-- Leopard
