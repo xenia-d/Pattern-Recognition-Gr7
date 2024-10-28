@@ -27,3 +27,5 @@ data
 6. figures can be seen from the 'figures' folder. 
  
 # Task 2
+
+The code is all found in the file 'semi-supervised.py'. You can either run this on your local device, or to run on Habrok see the 'habrok_run_task_2.sh' file under the folder 'habrok_jobs'
