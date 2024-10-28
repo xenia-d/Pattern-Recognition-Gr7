@@ -1,3 +1,4 @@
+
 # Task 1
 
 ## Genes Dataset Pipeline
@@ -7,6 +8,22 @@
 4. Plots are saved in Genes_results
 5. To run full grid search on habrok, you can use the files in the habrok_jobs folder, which make use of the run_gridsearch.py file.
 
-# Task 2
-mention where to put data?
+## BigCats Dataset Pipeline
+This task includes the notebooks: image_figure.ipynb, image_classification.ipynb, and image_clustering.ipynb
+1. Install required packages
+2. Create local directory under Assignment-2/data for the dataset, since the image dataset is too large to upload to github 
+3. Inside Assignment-2/data decompress the dataset so that the folder structure is resembles what is shown below: 
+
+data
+|-- BigCats
+    |-- Cheetah
+    |-- Jaguar
+    |-- Leopard
+    |-- Lion
+    |-- Tiger
+
+4. Run the notebooks in any order will be fine. 
+5. image_classification.ipynb and image_clustering.ipynb each contains a grid search cell the longest grid search ran from the coder's computer is 25 mins. 
+6. figures can be seen from the 'figures' folder. 
  
+# Task 2

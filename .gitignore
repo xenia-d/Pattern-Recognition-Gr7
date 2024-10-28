@@ -1,4 +1,7 @@
-Assignment-2\Data-PR-As2\*
+.DS_Store
+Assignment-2/data
+Assignment-2/Data-PR-As2
+
 *.jpg
 *.csv
 Assignment-2/__pycache__/GeneAnalysis.cpython-39.pyc
@@ -20,3 +23,4 @@ Assignment-2/__pycache__/GeneAnalysis.cpython-39.pyc
 Assignment-2/Genes_results/LeaveOneOut1_grid_search.pkl
 Assignment-2/Genes_results/LeaveOneOut2_grid_search.pkl
 Assignment-2/Genes_results/LeaveOneOut3_grid_search.pkl
+
