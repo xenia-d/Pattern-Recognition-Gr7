@@ -2,8 +2,14 @@
 # Task 1
 
 ## Genes Dataset Pipeline
-1. Install requirements
-2. Run genes_pipeline.py to run an example pipeline. Note that the grid search in this file is set to a smaller grid search, for ``testing'', as the full grid search consists of over 150 models and, depending on the cross-validation method, may use leave-one-out cross-validation. Please read the comments in the genes_pipeline file for further clarification.
+1. Install requirements and create local directory under Assignment-2/Data-PR-As2 for the dataset, such that the data is in the following format:
+
+Data-PR-As2
+|-- Genes
+    |-- data.csv
+    |-- labels.csv
+
+2. Run genes_pipeline.py to run an example pipeline. Note that the grid search in this file is set to a smaller grid search, for ``testing'', as the full grid search consists of over 150 models and, depending on the cross-validation method, may use leave-one-out cross-validation. Please read the comments in the genes_pipeline file for further clarification. Make sure to run this file while in the Assignment-2 folder.
 3. Results of the grid search can be found in Genes_results folder, but note that the Leave-One-Out cross-validation results are not available as the file was too large to push to github.
 4. Plots are saved in Genes_results
 5. To run full grid search on habrok, you can use the files in the habrok_jobs folder, which make use of the run_gridsearch.py file.
